@@ -1,0 +1,7 @@
+[package]
+name = "super_tiny_compiler"
+version = "0.1.0"
+authors = ["miao jing <243127395@qq.com>"]
+
+[dependencies]
+regex = "0.2"
