@@ -37,14 +37,14 @@ fn main() {
     debug!("this is a debug {}", "message");
     let input = "(add 2 (subtract 4 2))";
     let mut tokens = tokenizer(&input);
-    println!("tokens length {}", tokens.len());
+    debug!("tokens length {}", tokens.len());
 
     let node = parser(&mut tokens);
-    println!("parsed node is {:?}", node);
+    debug!("parsed node is {:?}", node);
 }
 
 // todo: move this into struct Token,
-// replace println with debug
+// replace debug with debug
 // const input  = '(add 2 (subtract 4 2))';
 fn tokenizer(input: &str) -> Vec<Token> {
     let mut tokens: Vec<Token> = vec![];
@@ -63,7 +63,7 @@ fn tokenizer(input: &str) -> Vec<Token> {
             };
             tokens.push(token.clone());
             counter += 1;
-            println!("{:?}, {:?}", TokenType::Paren, token);
+            debug!("{:?}, {:?}", TokenType::Paren, token);
         } else if c == ")".chars().nth(0).unwrap() {
             let token = Token {
                 tpe: TokenType::Paren,
@@ -71,7 +71,7 @@ fn tokenizer(input: &str) -> Vec<Token> {
             };
             tokens.push(token.clone());
             counter += 1;
-            println!("{:?}, {:?}", TokenType::Paren, token);
+            debug!("{:?}, {:?}", TokenType::Paren, token);
         } else if char_reg.is_match(&c.to_string()) {
             // let mut value = c.to_string();
             // while do_eval!(counter+=1, c = chars[counter]; char_reg.is_match(&c.to_string())){
@@ -82,14 +82,14 @@ fn tokenizer(input: &str) -> Vec<Token> {
                 value: acc!(c, counter, chars, char_reg),
             };
             tokens.push(token.clone());
-            println!("{:?}, {:?}", TokenType::Name, token);
+            debug!("{:?}, {:?}", TokenType::Name, token);
         } else if num_reg.is_match(&c.to_string()) {
             let token = Token {
                 tpe: TokenType::Number,
                 value: acc!(c, counter, chars, num_reg),
             };
             tokens.push(token.clone());
-            println!("{:?}, {:?}", TokenType::Number, token);
+            debug!("{:?}, {:?}", TokenType::Number, token);
         } else if c == "\"".chars().nth(0).unwrap() {
             counter += 1;
             let mut value = c.to_string();
@@ -101,10 +101,10 @@ fn tokenizer(input: &str) -> Vec<Token> {
                 value: value,
             };
             tokens.push(token.clone());
-            println!("{:?}, {:?}", TokenType::Strin, token);
+            debug!("{:?}, {:?}", TokenType::Strin, token);
             counter += 1;//skip ending quote off
         } else if c.is_whitespace() {
-            println!("{:?}", "empty token");
+            debug!("{:?}", "empty token");
             counter += 1;
         } else {
             panic!("{:?}， {:?}", "sorry unexpect character", c);
