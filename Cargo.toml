@@ -5,3 +5,5 @@ authors = ["miao jing <243127395@qq.com>"]
 
 [dependencies]
 regex = "0.2"
+env_logger = "0.4.2"
+log = "0.3.7"
