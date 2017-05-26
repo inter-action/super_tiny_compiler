@@ -2,7 +2,6 @@ extern crate regex;
 #[macro_use] extern crate log;
 extern crate env_logger;
 
-use log::LogLevel;
 
 use regex::Regex;
 
@@ -41,6 +40,16 @@ fn main() {
 
     let node = parser(&mut tokens);
     debug!("parsed node is {:?}", node);
+
+    let vs = vec![
+        (AstNode::Program{body: vec![]}, AstVisitor{enter: Some(Box::new(|astnode, option_parent|{println!("{:?} {:?}", astnode, option_parent);})), exit: None}),
+        (AstNode::CallExpression{name: String::from(""), params: vec![]}, AstVisitor{enter: Some(Box::new(|astnode, option_parent|{println!("\n\t CallExpression: node:{:?} \n\t parent: {:?}", astnode, option_parent);})), exit: None}),
+        (AstNode::NumberLiteral{value: String::from("")}, AstVisitor{enter: Some(Box::new(|astnode, option_parent|{println!("\n\t NumberLiteral node:{:?} \n\t parent: {:?}", astnode, option_parent);})), exit: None}),
+        (AstNode::StringLiteral{value: String::from("")}, AstVisitor{enter: Some(Box::new(|astnode, option_parent|{println!("\n\t StringLiteral node:{:?} \n\t parent: {:?}", astnode, option_parent);})), exit: None})
+    ];
+
+    let visitor_contaner = VistorContainer::new(vs);
+    traverse(&node, &visitor_contaner);
 }
 
 // todo: move this into struct Token,
@@ -239,6 +248,79 @@ impl Clone for Token {
         }
     }
 }
+
+struct AstVisitor {
+    enter: Option<Box<Fn(&AstNode, &Option<&AstNode>)>>, // trait is unsized, has to be boxed here
+    exit: Option<Box<Fn(&AstNode, &Option<&AstNode>)>>,
+}
+
+// compare Enum without fields
+fn variant_eq(a: &AstNode, b: &AstNode) -> bool {
+    match (a, b) {
+        (&AstNode::Program{..}, &AstNode::Program{..}) => true,
+        (&AstNode::CallExpression{..}, &AstNode::CallExpression{..}) => true,
+        (&AstNode::NumberLiteral{..}, &AstNode::NumberLiteral{..}) => true,
+        (&AstNode::StringLiteral{..}, &AstNode::StringLiteral{..}) => true,
+        _ => false,
+    }
+}
+
+
+struct VistorContainer{
+    data: Vec<(AstNode,AstVisitor)>
+}
+
+impl VistorContainer {
+    fn new(data: Vec<(AstNode,AstVisitor)>) -> VistorContainer{
+        VistorContainer{data: data}
+    }
+
+    fn get(&self, target: &AstNode)-> Option<&AstVisitor>{
+        for data in &self.data {
+            if variant_eq(&data.0, target) { // https://stackoverflow.com/questions/32554285/compare-enums-only-by-variant-not-value
+                return Some(&data.1);
+            }
+        }
+        return None;
+    }
+}
+
+fn traverse(ast: &AstNode, visitors: &VistorContainer){
+    // recursive closure, in fact it's quite tricky to do recursive lamda in rust.
+    // so i have to mannuly wrap up sorrounding environment variables. 
+    struct Env<'a> {
+        visitors: &'a VistorContainer
+    }
+
+    fn traverse_array(env: &Env, array: &Vec<AstNode>, parent: &Option<&AstNode>) {
+        for ref node in array {
+            traverse_node(env, node, parent);
+        }
+    }
+
+    fn traverse_node(env: &Env, node: &AstNode, parent: &Option<&AstNode>) -> (){
+        let ovisitor = env.visitors.get(node);
+        if let Some(vi) = ovisitor {
+            vi.enter.as_ref().map(|f| f(node, parent));
+        }
+
+        match node {
+            &AstNode::Program{ref body} => traverse_array(env, body, &Some(node)),
+            &AstNode::CallExpression{ref params, ..} => traverse_array(env, params, &Some(node)),
+            &AstNode::NumberLiteral{..} => (),
+            &AstNode::StringLiteral{..} => (),
+        }
+
+        if let Some(vi) = ovisitor {
+           vi.exit.as_ref().map(|f| f(node, parent));
+        }
+    };
+    
+    let env = Env{visitors};
+    traverse_node(&env, ast, &None);
+}
+
+
 // const input  = '(add 2 (subtract 4 2))';
 // const output = 'add(2, subtract(4, 2));';
 //
